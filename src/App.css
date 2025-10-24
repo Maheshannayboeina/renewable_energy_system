@@ -1,205 +1,30 @@
 /* frontend/src/App.css */
 
+/* 
+  We are keeping a minimal global stylesheet.
+  MUI provides its own theming and component-level styles,
+  so most of our previous custom CSS is no longer needed.
+  This file is for small, global overrides or specific tweaks
+  that MUI doesn't cover by default.
+*/
+
+/* 
+  We can keep a global body background color to ensure consistency,
+  although this is also often handled by MUI's CssBaseline component
+  in more advanced setups. For now, this is fine.
+*/
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    background-color: #f4f7f6;
-    color: #333;
     margin: 0;
-    padding: 20px;
+    font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: #f4f6f8; /* A light grey background for the whole page */
 }
 
-.App {
-    max-width: 600px;
-    margin: 0 auto;
-    background: #fff;
-    padding: 20px 40px;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-
-.App header {
-    text-align: center;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 20px;
-    margin-bottom: 20px;
-}
-
-.billing-form-container .form-group {
-    margin-bottom: 15px;
-}
-
-.billing-form-container label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-}
-
-.billing-form-container input {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box; /* Important */
-}
-
-.billing-form-container button {
-    width: 100%;
-    padding: 10px;
-    border: none;
-    border-radius: 4px;
-    background-color: #007bff;
-    color: white;
-    font-size: 16px;
-    cursor: pointer;
-}
-
-.billing-form-container button:hover {
-    background-color: #0056b3;
-}
-
-.result-container {
-    margin-top: 20px;
-    padding: 15px;
-    border-radius: 4px;
-}
-
-.result-container.success {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
-}
-
-.result-container.error {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
-}
-/* Add these styles to frontend/src/App.css */
-
-.form-container {
-    padding: 20px;
-}
-
-.form-group {
-    margin-bottom: 15px;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-}
-
-.form-group input {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box;
-}
-
-button[type="submit"] {
-    width: 100%;
-    padding: 10px;
-    border: none;
-    border-radius: 4px;
-    background-color: #007bff;
-    color: white;
-    font-size: 16px;
-    cursor: pointer;
-    margin-top: 10px;
-}
-
-button[type="submit"]:hover {
-    background-color: #0056b3;
-}
-
-nav {
-    padding: 10px;
-    background-color: #f8f9fa;
-    text-align: center;
-    border-bottom: 1px solid #ddd;
-    margin-bottom: 20px;
-}
-
-nav a {
-    margin: 0 15px;
-    text-decoration: none;
-    color: #007bff;
-    font-weight: bold;
-}
-
-/* Add these styles to the end of frontend/src/App.css */
-nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 30px;
-    background-color: #fff;
-    border-bottom: 1px solid #ddd;
-    margin-bottom: 20px;
-}
-
-nav a {
-    margin: 0 10px;
-    text-decoration: none;
-    color: #007bff;
-    font-weight: bold;
-}
-
-.nav-right span {
-    margin-right: 15px;
-    font-weight: bold;
-}
-
-.logout-button {
-    background: none;
-    border: 1px solid #dc3545;
-    color: #dc3545;
-    padding: 5px 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-}
-
-.logout-button:hover {
-    background-color: #dc3545;
-    color: white;
-}
-
-/* Add these styles to frontend/src/App.css */
-
-.dashboard-container {
-    display: flex;
-    flex-direction: column;
-    gap: 40px; /* Space between form and history table */
-}
-
-.data-history-container {
-    width: 100%;
-}
-
-.data-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-}
-
-.data-table th, .data-table td {
-    border: 1px solid #ddd;
-    padding: 12px;
-    text-align: left;
-}
-
-.data-table th {
-    background-color: #f8f9fa;
-    font-weight: bold;
-}
-
-.data-table tbody tr:nth-child(even) {
-    background-color: #f2f2f2;
-}
-
-.data-table tbody tr:hover {
-    background-color: #e9ecef;
-}
+/* 
+  All other styles related to .App, .form-container, .dashboard-container,
+  nav, buttons, inputs, and tables have been removed because MUI's
+  <Container>, <Paper>, <AppBar>, <Button>, <TextField>, and <Table>
+  components now handle this styling for us. This results in a much
+  cleaner, more maintainable, and more consistent UI.
+*/

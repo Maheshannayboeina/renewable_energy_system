@@ -1,6 +1,6 @@
 // frontend/src/App.js
-import './App.css';
 import { Routes, Route } from 'react-router-dom';
+import { Container, Box } from '@mui/material'; // <-- Import MUI layout components
 
 // Import Components
 import Navbar from './components/Navbar';
@@ -11,40 +11,33 @@ import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
-import BillingPage from './pages/BillingPage'; // <-- IMPORT THE NEW BILLING PAGE
+import BillingPage from './pages/BillingPage';
 
 function App() {
   return (
-    <div className="App-container">
-      <Navbar /> {/* Use the Navbar for navigation */}
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: '#f4f6f8' }}>
+      <Navbar /> {/* We will upgrade this to an MUI AppBar next */}
       
-      <main className="App-content">
+      {/* The main content area */}
+      <Container component="main" maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
         <Routes>
-          {/* Public Routes - Accessible to everyone */}
+          {/* Public Routes */}
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
 
-          {/* Protected Routes - Accessible only to logged-in users */}
+          {/* Protected Routes */}
           <Route 
             path="/dashboard" 
-            element={
-              <ProtectedRoute>
-                <DashboardPage />
-              </ProtectedRoute>
-            } 
+            element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} 
           />
           <Route 
             path="/billing" 
-            element={
-              <ProtectedRoute>
-                <BillingPage />
-              </ProtectedRoute>
-            } 
+            element={<ProtectedRoute><BillingPage /></ProtectedRoute>} 
           />
         </Routes>
-      </main>
-    </div>
+      </Container>
+    </Box>
   );
 }
 

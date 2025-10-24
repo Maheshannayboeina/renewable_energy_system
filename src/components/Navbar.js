@@ -1,41 +1,43 @@
 // frontend/src/components/Navbar.js
-
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext'; // <-- Import the auth hook
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { AppBar, Toolbar, Typography, Button, Box, Link } from '@mui/material'; // <-- MUI Imports
 
 function Navbar() {
-    const { user, logout } = useAuth(); // <-- Get user state and logout function
+    const { user, logout } = useAuth();
     const navigate = useNavigate();
 
     const handleLogout = () => {
         logout();
-        navigate('/login'); // Redirect to login page after logout
+        navigate('/login');
     };
 
     return (
-        <nav>
-            <div className="nav-left">
-                <Link to="/">Home</Link> | <Link to="/billing">Billing</Link>
-                {/* Show Dashboard link only if user is logged in */}
-                {user && <> | <Link to="/dashboard">Dashboard</Link></>}
-            </div>
-            <div className="nav-right">
-                {user ? (
-                    // If user is logged in, show welcome message and Logout button
-                    <>
-                        <span>Welcome, {user.username}!</span>
-                        <button onClick={handleLogout} className="logout-button">Logout</button>
-                    </>
-                ) : (
-                    // If user is not logged in, show Login and Register links
-                    <>
-                        <Link to="/login">Login</Link>
-                        <Link to="/register">Register</Link>
-                    </>
-                )}
-            </div>
-        </nav>
+        <AppBar position="static">
+            <Toolbar>
+                <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+                    <Link component={RouterLink} to="/" color="inherit" underline="none">
+                        REMS
+                    </Link>
+                </Typography>
+                
+                <Box>
+                    {user ? (
+                        <>
+                            <Button component={RouterLink} to="/dashboard" color="inherit">Dashboard</Button>
+                            <Button component={RouterLink} to="/billing" color="inherit">Billing</Button>
+                            <Button onClick={handleLogout} color="inherit">Logout</Button>
+                        </>
+                    ) : (
+                        <>
+                            <Button component={RouterLink} to="/login" color="inherit">Login</Button>
+                            <Button component={RouterLink} to="/register" color="inherit">Register</Button>
+                        </>
+                    )}
+                </Box>
+            </Toolbar>
+        </AppBar>
     );
 }
 
