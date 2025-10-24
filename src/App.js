@@ -1,23 +1,49 @@
-import logo from './logo.svg';
+// frontend/src/App.js
 import './App.css';
+import { Routes, Route } from 'react-router-dom';
+
+// Import Components
+import Navbar from './components/Navbar';
+import ProtectedRoute from './components/ProtectedRoute';
+
+// Import Pages
+import HomePage from './pages/HomePage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import DashboardPage from './pages/DashboardPage';
+import BillingPage from './pages/BillingPage'; // <-- IMPORT THE NEW BILLING PAGE
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className="App-container">
+      <Navbar /> {/* Use the Navbar for navigation */}
+      
+      <main className="App-content">
+        <Routes>
+          {/* Public Routes - Accessible to everyone */}
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+
+          {/* Protected Routes - Accessible only to logged-in users */}
+          <Route 
+            path="/dashboard" 
+            element={
+              <ProtectedRoute>
+                <DashboardPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/billing" 
+            element={
+              <ProtectedRoute>
+                <BillingPage />
+              </ProtectedRoute>
+            } 
+          />
+        </Routes>
+      </main>
     </div>
   );
 }
