@@ -1,4 +1,3 @@
-// ...existing code...
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import EnergyChart from '../components/EnergyChart';
@@ -22,11 +21,27 @@ function DashboardPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
+    // <<< --- NEW STATE ADDED START --- >>>
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+    // <<< --- NEW STATE ADDED END --- >>>
 
+    // <<< --- CODE MODIFIED START --- >>>
     const fetchEnergyData = useCallback(async () => {
         setIsLoading(true);
+        
+        let url = 'http://127.0.0.1:5000/api/energy';
+        const params = new URLSearchParams();
+        if (startDate) params.append('start_date', startDate);
+        if (endDate) params.append('end_date', endDate);
+        
+        const queryString = params.toString();
+        if (queryString) {
+            url += `?${queryString}`;
+        }
+
         try {
-            const response = await fetch('http://127.0.0.1:5000/api/energy', {
+            const response = await fetch(url, {
                 headers: { 'Authorization': `Bearer ${token}` },
             });
             if (!response.ok) throw new Error('Failed to fetch energy data.');
@@ -37,13 +52,14 @@ function DashboardPage() {
         } finally {
             setIsLoading(false);
         }
-    }, [token]);
+    }, [token, startDate, endDate]);
+    // <<< --- CODE MODIFIED END --- >>>
+
 
     useEffect(() => {
         if (token) fetchEnergyData();
     }, [token, fetchEnergyData]);
 
-    // Derived KPIs
     const totals = energyData.reduce((acc, row) => {
         acc.generated += Number(row.generated_kwh || 0);
         acc.consumed += Number(row.consumed_kwh || 0);
@@ -119,7 +135,7 @@ function DashboardPage() {
 
     return (
         <Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                 <Typography variant="h4" component="h1">Your Energy Dashboard</Typography>
                 <Stack direction="row" spacing={1}>
                     <Tooltip title="Refresh data">
@@ -135,13 +151,39 @@ function DashboardPage() {
                 </Stack>
             </Box>
 
+            {/* <<< --- NEW UI ADDED START --- >>> */}
+            <Paper sx={{ p: 2, mb: 3 }} variant="outlined">
+                <Stack direction={{xs: 'column', sm: 'row'}} spacing={2} alignItems="center">
+                    <Typography variant="subtitle1" sx={{ mr: 1, fontWeight: 'bold' }}>Filter by Date:</Typography>
+                    <TextField
+                        label="Start Date"
+                        type="date"
+                        size="small"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        InputLabelProps={{ shrink: true }}
+                    />
+                    <TextField
+                        label="End Date"
+                        type="date"
+                        size="small"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        InputLabelProps={{ shrink: true }}
+                    />
+                    <Button onClick={fetchEnergyData} variant="contained">Filter</Button>
+                </Stack>
+            </Paper>
+            {/* <<< --- NEW UI ADDED END --- >>> */}
+
+
             <Grid container spacing={2} sx={{ mb: 2 }}>
                 <Grid item xs={12} md={4}>
                     <Card variant="outlined">
                         <CardContent>
                             <Typography variant="subtitle2" color="text.secondary">Total Generated</Typography>
                             <Typography variant="h6" color="success.main">{formatNumber(totals.generated)} kWh</Typography>
-                            <Typography variant="caption" color="text.secondary">Since first recorded</Typography>
+                            <Typography variant="caption" color="text.secondary">{startDate || endDate ? "In selected range" : "Since first recorded"}</Typography>
                         </CardContent>
                     </Card>
                 </Grid>
@@ -150,7 +192,7 @@ function DashboardPage() {
                         <CardContent>
                             <Typography variant="subtitle2" color="text.secondary">Total Consumed</Typography>
                             <Typography variant="h6" color="error.main">{formatNumber(totals.consumed)} kWh</Typography>
-                            <Typography variant="caption" color="text.secondary">Since first recorded</Typography>
+                            <Typography variant="caption" color="text.secondary">{startDate || endDate ? "In selected range" : "Since first recorded"}</Typography>
                         </CardContent>
                     </Card>
                 </Grid>
@@ -168,7 +210,6 @@ function DashboardPage() {
             </Grid>
 
             <Grid container spacing={4}>
-                {/* Chart - full width */}
                 <Grid item xs={12}>
                     <Paper sx={{ p: 2, height: { xs: '300px', md: '420px' }, display: 'flex', flexDirection: 'column' }} elevation={3}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
@@ -181,14 +222,13 @@ function DashboardPage() {
                                 <EnergyChart energyData={energyData} />
                             ) : (
                                 <Box sx={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
-                                    <Typography color="text.secondary">No chart data. Add a reading to populate the chart.</Typography>
+                                    <Typography color="text.secondary">No data found for the selected criteria.</Typography>
                                 </Box>
                             )}
                         </Box>
                     </Paper>
                 </Grid>
 
-                {/* Data Entry Card */}
                 <Grid item xs={12} md={5}>
                     <Paper sx={{ p: 3 }} elevation={2}>
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
@@ -232,7 +272,6 @@ function DashboardPage() {
                     </Paper>
                 </Grid>
 
-                {/* Historical Data Table */}
                 <Grid item xs={12} md={7}>
                     <Paper sx={{ p: 3 }} elevation={2}>
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -278,4 +317,3 @@ function DashboardPage() {
 }
 
 export default DashboardPage;
-// ...existing code...
