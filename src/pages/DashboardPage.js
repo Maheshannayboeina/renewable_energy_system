@@ -1,16 +1,35 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import EnergyChart from '../components/EnergyChart';
+import { API_BASE_URL } from '../config/apiConfig';
 
-import {
-    Box, Grid, Paper, Typography, TextField, Button, Alert, CircularProgress,
-    Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-    Card, CardContent, IconButton, Divider, Stack, Tooltip
-} from '@mui/material';
-import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import { Box, Grid, Paper, Typography, TextField, Button, Alert, CircularProgress, Stack, Divider, Tabs, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
+import EvStationIcon from '@mui/icons-material/EvStation';
+import PowerIcon from '@mui/icons-material/Power';
+import BalanceIcon from '@mui/icons-material/Balance';
+import NotesIcon from '@mui/icons-material/Notes';
 import HistoryIcon from '@mui/icons-material/History';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import DownloadIcon from '@mui/icons-material/Download';
+import DateRangeIcon from '@mui/icons-material/DateRange';
+
+
+const KpiCard = ({ title, value, unit, icon, color }) => (
+  <Paper elevation={0} sx={{ p: 2.5, display: 'flex', alignItems: 'center', background: `linear-gradient(135deg, ${color} 0%, ${color}99 100%)`, color: 'white' }}>
+    <Box sx={{ mr: 2 }}>{icon}</Box>
+    <Box>
+      <Typography variant="body2">{title}</Typography>
+      <Typography variant="h5" sx={{ fontWeight: 'bold' }}>{value} <span style={{ fontSize: '0.9rem' }}>{unit}</span></Typography>
+    </Box>
+  </Paper>
+);
+
+function TabPanel(props) {
+  const { children, value, index, ...other } = props;
+  return (
+    <div role="tabpanel" hidden={value !== index} {...other}>
+      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+    </div>
+  );
+}
 
 function DashboardPage() {
     const { token } = useAuth();
@@ -21,298 +40,131 @@ function DashboardPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
-    // <<< --- NEW STATE ADDED START --- >>>
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
-    // <<< --- NEW STATE ADDED END --- >>>
+    const [tabValue, setTabValue] = useState(0);
 
-    // <<< --- CODE MODIFIED START --- >>>
+    const handleTabChange = (event, newValue) => setTabValue(newValue);
+
     const fetchEnergyData = useCallback(async () => {
-        setIsLoading(true);
-        
-        let url = 'http://127.0.0.1:5000/api/energy';
-        const params = new URLSearchParams();
-        if (startDate) params.append('start_date', startDate);
-        if (endDate) params.append('end_date', endDate);
-        
-        const queryString = params.toString();
-        if (queryString) {
-            url += `?${queryString}`;
-        }
-
-        try {
-            const response = await fetch(url, {
-                headers: { 'Authorization': `Bearer ${token}` },
-            });
-            if (!response.ok) throw new Error('Failed to fetch energy data.');
-            const data = await response.json();
-            setEnergyData(Array.isArray(data.data) ? data.data : []);
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setIsLoading(false);
-        }
+      setIsLoading(true);
+      let url = `${API_BASE_URL}/energy`;
+      const params = new URLSearchParams();
+      if (startDate) params.append('start_date', startDate);
+      if (endDate) params.append('end_date', endDate);
+      const queryString = params.toString();
+      if (queryString) url += `?${queryString}`;
+  
+      try {
+        const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+        const data = await response.json();
+        setEnergyData(Array.isArray(data.data) ? data.data.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp)) : []);
+      } catch (err) { setError(err.message); } 
+      finally { setIsLoading(false); }
     }, [token, startDate, endDate]);
-    // <<< --- CODE MODIFIED END --- >>>
-
-
-    useEffect(() => {
-        if (token) fetchEnergyData();
-    }, [token, fetchEnergyData]);
-
+  
+    useEffect(() => { if (token) fetchEnergyData(); }, [token, fetchEnergyData]);
+  
     const totals = energyData.reduce((acc, row) => {
-        acc.generated += Number(row.generated_kwh || 0);
-        acc.consumed += Number(row.consumed_kwh || 0);
-        acc.latestTimestamp = (!acc.latestTimestamp || new Date(row.timestamp) > new Date(acc.latestTimestamp)) ? row.timestamp : acc.latestTimestamp;
-        return acc;
-    }, { generated: 0, consumed: 0, latestTimestamp: null });
-
+      acc.generated += Number(row.generated_kwh || 0);
+      acc.consumed += Number(row.consumed_kwh || 0);
+      return acc;
+    }, { generated: 0, consumed: 0 });
+  
     const net = totals.generated - totals.consumed;
-
     const formatNumber = (n) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
+  
     const handleSubmit = async (event) => {
-        event.preventDefault();
-        setError(null);
-        setSuccess(null);
-
-        const gen = parseFloat(generatedKwh);
-        const con = parseFloat(consumedKwh);
-        if (Number.isNaN(gen) || Number.isNaN(con)) {
-            setError('Please enter valid numeric values for generated and consumed energy.');
-            setTimeout(() => setError(null), 4000);
-            return;
-        }
-
-        setIsSubmitting(true);
-        try {
-            const response = await fetch('http://127.0.0.1:5000/api/energy', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({
-                    generated_kwh: gen,
-                    consumed_kwh: con,
-                }),
-            });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.error || 'Failed to submit data.');
-            setSuccess('Energy data recorded successfully!');
-            setGeneratedKwh('');
-            setConsumedKwh('');
-            await fetchEnergyData();
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setIsSubmitting(false);
-            setTimeout(() => setSuccess(null), 3000);
-            setTimeout(() => setError(null), 5000);
-        }
+      event.preventDefault();
+      setIsSubmitting(true);
+      try {
+        const response = await fetch(`${API_BASE_URL}/energy`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ generated_kwh: parseFloat(generatedKwh), consumed_kwh: parseFloat(consumedKwh) }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error);
+        setSuccess('Reading submitted!');
+        setGeneratedKwh('');
+        setConsumedKwh('');
+        fetchEnergyData();
+      } catch (err) { setError(err.message); } 
+      finally {
+        setIsSubmitting(false);
+        setTimeout(() => setSuccess(null), 3000);
+      }
     };
-
-    const handleExportCSV = () => {
-        if (!energyData.length) return;
-        const header = ['id', 'timestamp', 'generated_kwh', 'consumed_kwh'];
-        const rows = energyData.map(r => [r.id, r.timestamp, r.generated_kwh, r.consumed_kwh]);
-        const csvContent = [header, ...rows].map(e => e.join(',')).join('\n');
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', `energy_data_${new Date().toISOString().slice(0,10)}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-    };
-
-    if (isLoading) {
-        return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6 }}>
-                <CircularProgress size={64} />
-            </Box>
-        );
-    }
-
+  
+    if (isLoading) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6 }}><CircularProgress /></Box>;
+  
     return (
-        <Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                <Typography variant="h4" component="h1">Your Energy Dashboard</Typography>
-                <Stack direction="row" spacing={1}>
-                    <Tooltip title="Refresh data">
-                        <IconButton onClick={fetchEnergyData} size="small">
-                            <RefreshIcon />
-                        </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Download CSV">
-                        <IconButton onClick={handleExportCSV} size="small" disabled={!energyData.length}>
-                            <DownloadIcon />
-                        </IconButton>
-                    </Tooltip>
+      <Box>
+        <Typography variant="h4" sx={{ mb: 3, fontWeight: 'bold' }}>Dashboard</Typography>
+        
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid item xs={12} md={4}><KpiCard title="Total Generated" value={formatNumber(totals.generated)} unit="kWh" icon={<EvStationIcon sx={{fontSize: 40}}/>} color="#2E7D32" /></Grid>
+          <Grid item xs={12} md={4}><KpiCard title="Total Consumed" value={formatNumber(totals.consumed)} unit="kWh" icon={<PowerIcon sx={{fontSize: 40}}/>} color="#D32F2F" /></Grid>
+          <Grid item xs={12} md={4}><KpiCard title="Net Energy" value={formatNumber(net)} unit="kWh" icon={<BalanceIcon sx={{fontSize: 40}}/>} color="#1976D2" /></Grid>
+        </Grid>
+  
+        <Grid container spacing={4}>
+          <Grid item xs={12}>
+            <Paper sx={{ p: 3, height: '500px', display: 'flex', flexDirection: 'column' }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+                <Typography variant="h6">Energy Overview</Typography>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <DateRangeIcon color="action" />
+                  <TextField type="date" size="small" value={startDate} onChange={(e) => setStartDate(e.target.value)} InputLabelProps={{ shrink: true }}/>
+                  <TextField type="date" size="small" value={endDate} onChange={(e) => setEndDate(e.target.value)} InputLabelProps={{ shrink: true }}/>
                 </Stack>
-            </Box>
-
-            {/* <<< --- NEW UI ADDED START --- >>> */}
-            <Paper sx={{ p: 2, mb: 3 }} variant="outlined">
-                <Stack direction={{xs: 'column', sm: 'row'}} spacing={2} alignItems="center">
-                    <Typography variant="subtitle1" sx={{ mr: 1, fontWeight: 'bold' }}>Filter by Date:</Typography>
-                    <TextField
-                        label="Start Date"
-                        type="date"
-                        size="small"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                        InputLabelProps={{ shrink: true }}
-                    />
-                    <TextField
-                        label="End Date"
-                        type="date"
-                        size="small"
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
-                        InputLabelProps={{ shrink: true }}
-                    />
-                    <Button onClick={fetchEnergyData} variant="contained">Filter</Button>
-                </Stack>
+              </Stack>
+              <Divider sx={{ mb: 2 }}/>
+              <Box sx={{ flexGrow: 1 }}>
+                <EnergyChart energyData={energyData} />
+              </Box>
             </Paper>
-            {/* <<< --- NEW UI ADDED END --- >>> */}
+          </Grid>
 
-
-            <Grid container spacing={2} sx={{ mb: 2 }}>
-                <Grid item xs={12} md={4}>
-                    <Card variant="outlined">
-                        <CardContent>
-                            <Typography variant="subtitle2" color="text.secondary">Total Generated</Typography>
-                            <Typography variant="h6" color="success.main">{formatNumber(totals.generated)} kWh</Typography>
-                            <Typography variant="caption" color="text.secondary">{startDate || endDate ? "In selected range" : "Since first recorded"}</Typography>
-                        </CardContent>
-                    </Card>
-                </Grid>
-                <Grid item xs={12} md={4}>
-                    <Card variant="outlined">
-                        <CardContent>
-                            <Typography variant="subtitle2" color="text.secondary">Total Consumed</Typography>
-                            <Typography variant="h6" color="error.main">{formatNumber(totals.consumed)} kWh</Typography>
-                            <Typography variant="caption" color="text.secondary">{startDate || endDate ? "In selected range" : "Since first recorded"}</Typography>
-                        </CardContent>
-                    </Card>
-                </Grid>
-                <Grid item xs={12} md={4}>
-                    <Card variant="outlined">
-                        <CardContent>
-                            <Typography variant="subtitle2" color="text.secondary">Net (Generated - Consumed)</Typography>
-                            <Typography variant="h6" sx={{ color: net >= 0 ? 'success.main' : 'error.main' }}>{formatNumber(net)} kWh</Typography>
-                            <Typography variant="caption" color="text.secondary">
-                                {totals.latestTimestamp ? `Last update: ${new Date(totals.latestTimestamp).toLocaleString()}` : 'No updates yet'}
-                            </Typography>
-                        </CardContent>
-                    </Card>
-                </Grid>
-            </Grid>
-
-            <Grid container spacing={4}>
-                <Grid item xs={12}>
-                    <Paper sx={{ p: 2, height: { xs: '300px', md: '420px' }, display: 'flex', flexDirection: 'column' }} elevation={3}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                            <Typography variant="h6">Production vs Consumption</Typography>
-                            <Typography variant="caption" color="text.secondary">{energyData.length} records</Typography>
-                        </Box>
-                        <Divider sx={{ mb: 1 }} />
-                        <Box sx={{ flexGrow: 1 }}>
-                            {energyData.length > 0 ? (
-                                <EnergyChart energyData={energyData} />
-                            ) : (
-                                <Box sx={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
-                                    <Typography color="text.secondary">No data found for the selected criteria.</Typography>
-                                </Box>
-                            )}
-                        </Box>
-                    </Paper>
-                </Grid>
-
-                <Grid item xs={12} md={5}>
-                    <Paper sx={{ p: 3 }} elevation={2}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                            <AddCircleOutlineIcon color="primary" sx={{ mr: 1 }} />
-                            <Typography variant="h6">Record New Data</Typography>
-                        </Box>
-                        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
-                            <TextField
-                                label="Energy Generated (kWh)"
-                                type="number"
-                                inputProps={{ step: '0.01', min: '0' }}
-                                value={generatedKwh}
-                                onChange={(e) => setGeneratedKwh(e.target.value)}
-                                required
-                                fullWidth
-                                margin="normal"
-                            />
-                            <TextField
-                                label="Energy Consumed (kWh)"
-                                type="number"
-                                inputProps={{ step: '0.01', min: '0' }}
-                                value={consumedKwh}
-                                onChange={(e) => setConsumedKwh(e.target.value)}
-                                required
-                                fullWidth
-                                margin="normal"
-                            />
-                            <Button
-                                type="submit"
-                                variant="contained"
-                                fullWidth
-                                sx={{ mt: 2 }}
-                                disabled={isSubmitting}
-                            >
-                                {isSubmitting ? <CircularProgress size={20} color="inherit" /> : 'Submit Reading'}
-                            </Button>
-                        </Box>
-
-                        {success && <Alert severity="success" sx={{ mt: 2 }}>{success}</Alert>}
-                        {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
-                    </Paper>
-                </Grid>
-
-                <Grid item xs={12} md={7}>
-                    <Paper sx={{ p: 3 }} elevation={2}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                            <HistoryIcon color="primary" sx={{ mr: 1 }} />
-                            <Typography variant="h6">Historical Data</Typography>
-                        </Box>
-                        {energyData.length > 0 ? (
-                            <TableContainer sx={{ maxHeight: 380 }}>
-                                <Table stickyHeader size="small">
-                                    <TableHead>
-                                        <TableRow>
-                                            <TableCell>Date & Time</TableCell>
-                                            <TableCell align="right">Generated (kWh)</TableCell>
-                                            <TableCell align="right">Consumed (kWh)</TableCell>
-                                            <TableCell align="right">Net (kWh)</TableCell>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {energyData.map((row) => {
-                                            const generated = Number(row.generated_kwh || 0);
-                                            const consumed = Number(row.consumed_kwh || 0);
-                                            const rowNet = generated - consumed;
-                                            return (
-                                                <TableRow key={row.id} hover>
-                                                    <TableCell sx={{ minWidth: 180 }}>{row.timestamp ? new Date(row.timestamp).toLocaleString() : '—'}</TableCell>
-                                                    <TableCell align="right" sx={{ color: 'success.main', fontWeight: 600 }}>{formatNumber(generated)}</TableCell>
-                                                    <TableCell align="right" sx={{ color: 'error.main', fontWeight: 600 }}>{formatNumber(consumed)}</TableCell>
-                                                    <TableCell align="right" sx={{ color: rowNet >= 0 ? 'success.main' : 'error.main', fontWeight: 600 }}>{formatNumber(rowNet)}</TableCell>
-                                                </TableRow>
-                                            );
-                                        })}
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
-                        ) : (
-                            <Typography sx={{ mt: 2 }}>No energy data found. Submit a new reading to get started.</Typography>
-                        )}
-                    </Paper>
-                </Grid>
-            </Grid>
-        </Box>
+          <Grid item xs={12}>
+            <Paper>
+              <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                <Tabs value={tabValue} onChange={handleTabChange}>
+                  <Tab icon={<NotesIcon />} iconPosition="start" label="Record New Reading" />
+                  <Tab icon={<HistoryIcon />} iconPosition="start" label="Historical Data" />
+                </Tabs>
+              </Box>
+              <TabPanel value={tabValue} index={0}>
+                <Box component="form" onSubmit={handleSubmit}>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={5}><TextField label="Energy Generated (kWh)" type="number" value={generatedKwh} onChange={(e) => setGeneratedKwh(e.target.value)} required fullWidth /></Grid>
+                    <Grid item xs={12} sm={5}><TextField label="Energy Consumed (kWh)" type="number" value={consumedKwh} onChange={(e) => setConsumedKwh(e.target.value)} required fullWidth /></Grid>
+                    <Grid item xs={12} sm={2}><Button type="submit" variant="contained" size="large" fullWidth sx={{height: '100%'}} disabled={isSubmitting}>{isSubmitting ? <CircularProgress size={24} /> : 'Submit'}</Button></Grid>
+                  </Grid>
+                </Box>
+                {success && <Alert severity="success" sx={{ mt: 2 }}>{success}</Alert>}
+                {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
+              </TabPanel>
+              <TabPanel value={tabValue} index={1}>
+                <TableContainer sx={{ maxHeight: 440 }}>
+                  <Table stickyHeader>
+                    <TableHead><TableRow><TableCell>Date & Time</TableCell><TableCell align="right">Generated (kWh)</TableCell><TableCell align="right">Consumed (kWh)</TableCell></TableRow></TableHead>
+                    <TableBody>
+                      {energyData.slice().reverse().map((row) => (
+                        <TableRow key={row.id} hover>
+                          <TableCell>{new Date(row.timestamp).toLocaleString()}</TableCell>
+                          <TableCell align="right" sx={{ color: 'secondary.main', fontWeight: 500 }}>{formatNumber(row.generated_kwh)}</TableCell>
+                          <TableCell align="right" sx={{ color: 'error.main', fontWeight: 500 }}>{formatNumber(row.consumed_kwh)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </TabPanel>
+            </Paper>
+          </Grid>
+        </Grid>
+      </Box>
     );
 }
 
